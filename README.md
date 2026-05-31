@@ -1,3 +1,4 @@
+ HEAD
 # 🩺 MediScan AI
 
 **ML-powered disease risk prediction — CSC-233 AI Lab Project, BNU Spring 2026**
@@ -8,11 +9,10 @@
 
 ## 📋 Project Overview
 
-MediScan AI is a Streamlit web application that predicts the risk of **Heart Disease** and **Diabetes**
-using four supervised machine-learning classifiers trained on CDC BRFSS survey data.
+MediScan AI is a Streamlit web application that predicts the risk of **Heart Disease** and **Diabetes** using four supervised machine-learning classifiers trained on CDC BRFSS survey data.
 
 | Feature | Details |
-|---|---|
+|----------|----------|
 | Diseases | Heart Disease (BRFSS 2022), Diabetes (BRFSS 2015) |
 | Models | Random Forest, SVM, Decision Tree, Naive Bayes |
 | Evaluation | Accuracy, F1, Precision, Recall, ROC-AUC, 5-Fold CV |
@@ -36,17 +36,17 @@ using four supervised machine-learning classifiers trained on CDC BRFSS survey d
 
 ## 🗂️ Project Structure
 
-```
+```text
 mediscan_ai/
-├── app.py                  # Main Streamlit entry point
-├── preprocess.py           # Data cleaning & feature engineering
-├── predict.py              # Model training script (all 4 models × 2 diseases)
-├── db.py                   # MongoDB + SQLite database layer
-├── requirements.txt        # Python dependencies
-├── data/                   # Place your CSV datasets here
+├── app.py
+├── preprocess.py
+├── predict.py
+├── db.py
+├── requirements.txt
+├── data/
 │   ├── heart_2022_with_nans.csv
 │   └── diabetes_binary_health_indicators_BRFSS2015.csv
-├── models/                 # Auto-created after training
+├── models/
 │   ├── heart_model.pkl
 │   ├── heart_scaler.pkl
 │   ├── heart_feature_cols.pkl
@@ -56,95 +56,92 @@ mediscan_ai/
 │   ├── diabetes_feature_cols.pkl
 │   └── diabetes_metrics.json
 └── pages/
-    ├── heart.py            # Heart Disease prediction page
-    ├── diabetes.py         # Diabetes prediction page
-    ├── chat.py             # Gemini symptom chat
-    ├── compare.py          # Model comparison dashboard
-    ├── history.py          # Prediction history + PDF export
-    └── analytics.py        # Analytics dashboard (6 MongoDB pipelines)
+    ├── heart.py
+    ├── diabetes.py
+    ├── chat.py
+    ├── compare.py
+    ├── history.py
+    └── analytics.py
 ```
 
 ---
 
 ## ⚡ Quick Start
 
-### 1. Install dependencies
+### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Place datasets in `data/` folder
+### 2. Place Datasets in `data/`
 
-```
+```text
 data/heart_2022_with_nans.csv
 data/diabetes_binary_health_indicators_BRFSS2015.csv
 ```
 
-Download from Kaggle:
-- Heart: [heart-disease-2022](https://www.kaggle.com/datasets/kamilpytlak/personal-key-indicators-of-heart-disease)
-- Diabetes: [pima-indians-diabetes-database](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset)
-
-### 3. Train all models
+### 3. Train Models
 
 ```bash
 python predict.py
 ```
 
-This trains all 4 classifiers for both diseases and saves models + metrics to `models/`.
-
-### 4. Run the app
+### 4. Run the App
 
 ```bash
 streamlit run app.py
 ```
 
-Open http://localhost:8501
+Open:
+
+```text
+http://localhost:8501
+```
 
 ---
 
 ## 🗄️ MongoDB Setup (Optional)
 
-MongoDB is optional — the app works fully with SQLite without it.
-To enable MongoDB features (6 aggregation pipelines, text search):
+MongoDB is optional. The application works fully with SQLite.
 
 ```bash
-# Install MongoDB Community Edition
-# Then start it:
 mongod --dbpath /data/db
 ```
 
-The app auto-detects MongoDB on `localhost:27017`.
+The app automatically detects MongoDB on `localhost:27017`.
 
 ---
 
 ## 📊 Datasets
 
 | Dataset | Source | Samples | Features | Target |
-|---|---|---|---|---|
-| Heart Disease | CDC BRFSS 2022 | ~246,000 | 17 | HeartDisease (Yes/No) |
-| Diabetes | CDC BRFSS 2015 | ~253,680 | 21 | Diabetes_binary (0/1) |
+|----------|----------|----------|----------|----------|
+| Heart Disease | CDC BRFSS 2022 | ~246,000 | 17 | HeartDisease |
+| Diabetes | CDC BRFSS 2015 | ~253,680 | 21 | Diabetes_binary |
 
 ---
 
 ## 🤖 Models
 
-| Model | Implementer | Key Config |
-|---|---|---|
-| Random Forest | Mustafa Ali | 100 trees, SMOTE balancing |
-| SVM | Muhammad Arsal | RBF kernel, probability=True |
-| Decision Tree | Ahmed Hunbal | max_depth=8 |
+| Model | Implementer | Configuration |
+|----------|----------|----------|
+| Random Forest | Mustafa Ali | 100 Trees + SMOTE |
+| SVM | Muhammad Arsal | RBF Kernel |
+| Decision Tree | Ahmed Hunbal | max_depth = 8 |
 | Naive Bayes | Daniyal Khan | GaussianNB |
 
 All models use:
-- 80/20 train/test split
-- SMOTE for class imbalance
-- StandardScaler normalisation
+
+- 80/20 Train-Test Split
+- SMOTE for class balancing
+- StandardScaler normalization
 - 5-Fold Stratified Cross Validation
 
 ---
 
 ## ⚕️ Disclaimer
 
-MediScan AI is an **educational tool only**. Results are not a medical diagnosis.
-Always consult a qualified healthcare professional for medical advice.
+MediScan AI is an educational project and not a medical diagnostic system.
+
+Predictions are intended for learning and demonstration purposes only. Always consult qualified healthcare professionals for medical advice, diagnosis, or treatment.
