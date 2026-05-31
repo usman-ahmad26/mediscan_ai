@@ -16,27 +16,24 @@ def verify_password(password: str, hashed: str) -> bool:
 
 def register_user(name: str, email: str, password: str) -> dict:
     db = get_db()
-    if db is None:
-        return {"success": False, "message": "Database unavailable."}
 
     existing = db.users.find_one({"email": email.lower().strip()})
     if existing:
         return {"success": False, "message": "An account with this email already exists."}
 
     db.users.insert_one({
-        "name":       name.strip(),
-        "email":      email.lower().strip(),
-        "password":   hash_password(password),
+        "name": name.strip(),
+        "email": email.lower().strip(),
+        "password": hash_password(password),
         "created_at": datetime.utcnow(),
-        "role":       "patient"
+        "role": "patient"
     })
+
     return {"success": True, "message": "Account created successfully."}
 
 
 def login_user(email: str, password: str) -> dict:
     db = get_db()
-    if db is None:
-        return {"success": False, "message": "Database unavailable."}
 
     user = db.users.find_one({"email": email.lower().strip()})
     if not user:
@@ -48,9 +45,9 @@ def login_user(email: str, password: str) -> dict:
     return {
         "success": True,
         "user": {
-            "name":  user["name"],
+            "name": user["name"],
             "email": user["email"],
-            "role":  user.get("role", "patient")
+            "role": user.get("role", "patient")
         }
     }
 
@@ -70,7 +67,6 @@ def logout():
 
 
 def require_login():
-    """Call this at the top of any page that requires authentication."""
     if not is_logged_in():
         st.warning("Please log in to access this page.")
         st.stop()
