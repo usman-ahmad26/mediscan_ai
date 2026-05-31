@@ -1,0 +1,46 @@
+[
+  {
+    "model_name": "Random Forest",
+    "accuracy": 93.9,
+    "f1_score": 8.42,
+    "precision": 23.35,
+    "recall": 5.14,
+    "roc_auc": 78.14,
+    "cv_f1_mean": 93.86,
+    "cv_f1_std": 0.27,
+    "disease_type": "heart"
+  },
+  {
+    "model_name": "SVM",
+    "accuracy": 73.56,
+    "f1_score": 23.7,
+    "precision": 14.06,
+    "recall": 75.18,
+    "roc_auc": 81.77,
+    "cv_f1_mean": 75.66,
+    "cv_f1_std": 0.6,
+    "disease_type": "heart"
+  },
+  {
+    "model_name": "Decision Tree",
+    "accuracy": 85.3,
+    "f1_score": 24.96,
+    "precision": 17.31,
+    "recall": 44.77,
+    "roc_auc": 77.87,
+    "cv_f1_mean": 86.25,
+    "cv_f1_std": 0.74,
+    "disease_type": "heart"
+  },
+  {
+    "model_name": "Naive Bayes",
+    "accuracy": 79.12,
+    "f1_score": 24.3,
+    "precision": 15.15,
+    "recall": 61.37,
+    "roc_auc": 80.25,
+    "cv_f1_mean": 66.45,
+    "cv_f1_std": 0.64,
+    "disease_type": "heart"
+  }
+]

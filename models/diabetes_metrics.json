@@ -1,0 +1,46 @@
+[
+  {
+    "model_name": "Random Forest",
+    "accuracy": 84.05,
+    "f1_score": 27.04,
+    "precision": 45.02,
+    "recall": 19.32,
+    "roc_auc": 77.73,
+    "cv_f1_mean": 87.76,
+    "cv_f1_std": 0.52,
+    "disease_type": "diabetes"
+  },
+  {
+    "model_name": "SVM",
+    "accuracy": 71.46,
+    "f1_score": 44.62,
+    "precision": 31.72,
+    "recall": 75.18,
+    "roc_auc": 80.77,
+    "cv_f1_mean": 74.89,
+    "cv_f1_std": 0.47,
+    "disease_type": "diabetes"
+  },
+  {
+    "model_name": "Decision Tree",
+    "accuracy": 80.02,
+    "f1_score": 44.39,
+    "precision": 38.64,
+    "recall": 52.16,
+    "roc_auc": 79.3,
+    "cv_f1_mean": 81.64,
+    "cv_f1_std": 0.37,
+    "disease_type": "diabetes"
+  },
+  {
+    "model_name": "Naive Bayes",
+    "accuracy": 64.39,
+    "f1_score": 40.74,
+    "precision": 27.33,
+    "recall": 80.03,
+    "roc_auc": 76.43,
+    "cv_f1_mean": 74.58,
+    "cv_f1_std": 0.35,
+    "disease_type": "diabetes"
+  }
+]
