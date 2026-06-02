@@ -1,4 +1,4 @@
-"""pages/heart.py — Heart Disease Prediction (BRFSS 2022 dataset)"""
+"""pages/heart.py — Heart Disease Prediction (Simplified for Users)"""
 
 import streamlit as st
 import numpy as np
@@ -67,8 +67,8 @@ def risk_card(risk, confidence, tips):
 
 
 def show():
-    st.markdown("<h1>❤️ Heart Disease Prediction</h1>", unsafe_allow_html=True)
-    st.caption("Enter your health indicators to assess cardiac disease risk (CDC BRFSS 2022 model)")
+    st.markdown("<h1>❤️ Heart Disease Risk Assessment</h1>", unsafe_allow_html=True)
+    st.caption("Answer a few simple questions to understand your heart health risk")
 
     model, scaler, feature_cols = load_heart_model()
     model_ready = model is not None
@@ -78,118 +78,216 @@ def show():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Row 1: Demographics & Medical History ─────────────────────────────────
+    # ── Patient Name ──────────────────────────────────────────────────────────
+    col1, col2 = st.columns(2)
+    with col1:
+        patient_name = st.text_input("Your Name (optional)", placeholder="Enter your name")
+    with col2:
+        age = st.number_input("Your Age", 18, 100, 45, help="How old are you?")
+
+    st.markdown("---")
+
+    # ── Row 1: Basic Health Info ─────────────────────────────────────────────
     col1, col2 = st.columns(2, gap="large")
 
     with col1:
-        st.markdown("##### 👤 Demographics & Lifestyle")
-        sex = st.selectbox("Biological Sex", ["Male", "Female"])
-        age_cat = st.selectbox("Age Category", [
-            "18-24","25-29","30-34","35-39","40-44","45-49",
-            "50-54","55-59","60-64","65-69","70-74","75-79","80 or older"
-        ], index=8)
-        bmi = st.number_input("BMI", 10.0, 60.0, 27.0, step=0.1, help="Body Mass Index")
-        physical_activity = st.selectbox("Physically Active (past 30 days)?", ["Yes", "No"])
-        sleep_time = st.slider("Average Sleep per Night (hours)", 1, 24, 7)
-        gen_health = st.selectbox("General Health", ["Excellent", "Very good", "Good", "Fair", "Poor"])
-        physical_health = st.slider("Days of Poor Physical Health (last 30 days)", 0, 30, 0)
-        mental_health = st.slider("Days of Poor Mental Health (last 30 days)", 0, 30, 0)
+        st.markdown("##### 👤 About You")
+        sex = st.selectbox("Gender", ["Male", "Female"])
+        
+        weight = st.number_input("Your Weight (kg)", 30, 200, 70, help="Enter your weight in kilograms")
+        height = st.number_input("Your Height (cm)", 100, 220, 170, help="Enter your height in centimeters")
+        
+        if height > 0:
+            bmi = weight / ((height/100) ** 2)
+        else:
+            bmi = 25.0
+        st.caption(f"Your BMI: {bmi:.1f}")
 
     with col2:
-        st.markdown("##### 🫀 Medical History")
-        smoking     = st.selectbox("Smoked ≥100 cigarettes in lifetime?", ["No", "Yes"])
-        alcohol     = st.selectbox("Heavy Alcohol Use?", ["No", "Yes"],
-                                   help="Men >14 drinks/week, Women >7 drinks/week")
-        stroke      = st.selectbox("Ever had a Stroke?", ["No", "Yes"])
-        diff_walking= st.selectbox("Difficulty Walking / Climbing Stairs?", ["No", "Yes"])
-        diabetic    = st.selectbox("Diabetic Status",
-                                   ["No", "Yes", "No, borderline diabetes", "Yes (during pregnancy)"])
-        asthma      = st.selectbox("Asthma?", ["No", "Yes"])
-        kidney_dis  = st.selectbox("Kidney Disease?", ["No", "Yes"])
-        skin_cancer = st.selectbox("Skin Cancer?", ["No", "Yes"])
+        st.markdown("##### 🩺 Medical History")
+        smoking = st.selectbox("Do you currently smoke?", ["No", "Yes"])
+        high_bp = st.selectbox("Do you have high blood pressure?", ["No", "Yes"])
+        diabetic = st.selectbox("Do you have diabetes?", ["No", "Yes"])
+
+    st.markdown("---")
+
+    # ── Row 2: Lifestyle ─────────────────────────────────────────────────────
+    col1, col2 = st.columns(2, gap="large")
+
+    with col1:
+        st.markdown("##### 🏃‍♂️ Your Lifestyle")
+        physical_activity = st.selectbox(
+            "How often do you exercise?",
+            ["Rarely or never", "1-2 times per week", "3-4 times per week", "5+ times per week"]
+        )
+        
+        sleep_time = st.selectbox(
+            "How many hours do you sleep on average?",
+            ["Less than 6 hours", "6-7 hours", "7-8 hours", "More than 8 hours"]
+        )
+
+    with col2:
+        st.markdown("##### 💪 Your Health")
+        gen_health = st.selectbox(
+            "How would you rate your general health?",
+            ["Poor", "Fair", "Good", "Very good", "Excellent"]
+        )
+        
+        chest_pain = st.selectbox(
+            "Do you experience chest discomfort?",
+            ["No", "Yes, during exercise", "Yes, at rest", "Yes, randomly"]
+        )
+
+    st.markdown("---")
 
     # ── Symptom notes full width ───────────────────────────────────────────────
     symptom_notes = st.text_area(
-        "Symptom Notes (optional)",
-        placeholder="e.g. chest tightness, shortness of breath, palpitations..."
+        "📝 Symptom Notes (optional)",
+        placeholder="e.g. chest tightness, shortness of breath, palpitations, dizziness...",
+        height=80
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if st.button("🔍 Predict Heart Disease Risk", type="primary"):
+    if st.button("🔍 Check My Heart Risk", type="primary"):
         if not model_ready:
             st.error("Models not trained yet. Run `python predict.py` first.")
             return
 
-        age_order = ["18-24","25-29","30-34","35-39","40-44","45-49",
-                     "50-54","55-59","60-64","65-69","70-74","75-79","80 or older"]
-        gen_order = ["Poor", "Fair", "Good", "Very good", "Excellent"]
-        diabetic_map = {"No": 0, "Yes": 1,
-                        "No, borderline diabetes": 2, "Yes (during pregnancy)": 3}
+        # Map values to model features
+        age_cat_list = ["18-24","25-29","30-34","35-39","40-44","45-49",
+                        "50-54","55-59","60-64","65-69","70-74","75-79","80 or older"]
+        
+        # Convert age to age category
+        if age < 25:
+            age_cat = "18-24"
+        elif age < 30:
+            age_cat = "25-29"
+        elif age < 35:
+            age_cat = "30-34"
+        elif age < 40:
+            age_cat = "35-39"
+        elif age < 45:
+            age_cat = "40-44"
+        elif age < 50:
+            age_cat = "45-49"
+        elif age < 55:
+            age_cat = "50-54"
+        elif age < 60:
+            age_cat = "55-59"
+        elif age < 65:
+            age_cat = "60-64"
+        elif age < 70:
+            age_cat = "65-69"
+        elif age < 75:
+            age_cat = "70-74"
+        elif age < 80:
+            age_cat = "75-79"
+        else:
+            age_cat = "80 or older"
+        
+        # Map physical activity
+        phys_act_map = {
+            "Rarely or never": 0,
+            "1-2 times per week": 1,
+            "3-4 times per week": 2,
+            "5+ times per week": 3
+        }
+        physical_activity_val = phys_act_map[physical_activity]
+        
+        # Map sleep time
+        sleep_map = {
+            "Less than 6 hours": 5,
+            "6-7 hours": 7,
+            "7-8 hours": 7.5,
+            "More than 8 hours": 8
+        }
+        sleep_time_val = sleep_map[sleep_time]
+        
+        # Map general health (reverse order for model)
+        health_map = {
+            "Poor": 1,
+            "Fair": 2,
+            "Good": 3,
+            "Very good": 4,
+            "Excellent": 5
+        }
+        gen_health_val = health_map[gen_health]
+        
+        # Chest pain presence
+        chest_pain_val = 1 if chest_pain != "No" else 0
 
         raw = {
-            "BMI":              bmi,
-            "Smoking":          1 if smoking == "Yes" else 0,
-            "AlcoholDrinking":  1 if alcohol == "Yes" else 0,
-            "Stroke":           1 if stroke == "Yes" else 0,
-            "PhysicalHealth":   float(physical_health),
-            "MentalHealth":     float(mental_health),
-            "DiffWalking":      1 if diff_walking == "Yes" else 0,
-            "Sex":              1 if sex == "Male" else 0,
-            "AgeCategory":      age_order.index(age_cat),
-            "Race":             0,
-            "Diabetic":         diabetic_map.get(diabetic, 0),
-            "PhysicalActivity": 1 if physical_activity == "Yes" else 0,
-            "GenHealth":        gen_order.index(gen_health),
-            "SleepTime":        float(sleep_time),
-            "Asthma":           1 if asthma == "Yes" else 0,
-            "KidneyDisease":    1 if kidney_dis == "Yes" else 0,
-            "SkinCancer":       1 if skin_cancer == "Yes" else 0,
+            "BMI": bmi,
+            "Smoking": 1 if smoking == "Yes" else 0,
+            "AlcoholDrinking": 0,  # Default for simplicity
+            "Stroke": 0,  # Default for simplicity
+            "PhysicalHealth": 0,  # Default for simplicity
+            "MentalHealth": 0,  # Default for simplicity
+            "DiffWalking": 0,  # Default for simplicity
+            "Sex": 1 if sex == "Male" else 0,
+            "AgeCategory": age_cat_list.index(age_cat),
+            "Race": 0,
+            "Diabetic": 1 if diabetic == "Yes" else 0,
+            "PhysicalActivity": physical_activity_val,
+            "GenHealth": gen_health_val,
+            "SleepTime": sleep_time_val,
+            "Asthma": 0,  # Default for simplicity
+            "KidneyDisease": 0,  # Default for simplicity
+            "SkinCancer": 0,  # Default for simplicity
+            "HighBP": 1 if high_bp == "Yes" else 0,  # Add HighBP if needed
         }
 
-        feat_vec = np.array([[raw.get(f, 0) for f in feature_cols]], dtype=float)
-        feat_scaled = scaler.transform(feat_vec)
-        prob = model.predict_proba(feat_scaled)[0][1]
-        confidence = round(prob * 100, 1)
+        # Create feature vector
+        try:
+            feat_vec = np.array([[raw.get(f, 0) for f in feature_cols]], dtype=float)
+            feat_scaled = scaler.transform(feat_vec)
+            prob = model.predict_proba(feat_scaled)[0][1]
+            confidence = round(prob * 100, 1)
+        except Exception as e:
+            st.error(f"Prediction error: {e}")
+            confidence = 50
 
         if prob < 0.35:
             risk = "Low Risk"
             tips = [
-                "Maintain your current heart-healthy habits.",
-                "Get an annual BP and cholesterol check.",
-                "Continue 150+ min/week of moderate aerobic activity.",
+                "✅ Keep up the good work with your healthy habits!",
+                "🏃‍♂️ Stay active — aim for 30 minutes of exercise, 5 days a week",
+                "🥗 Eat a balanced diet with plenty of fruits and vegetables",
+                "🩺 Get an annual check-up including blood pressure and cholesterol",
             ]
         elif prob < 0.65:
             risk = "Medium Risk"
             tips = [
-                "Schedule a cardiac checkup within the next 2–4 weeks.",
-                "Monitor blood pressure daily.",
-                "Reduce sodium, saturated fat, and processed sugar intake.",
-                "Aim for 7–9 hours sleep per night.",
+                "🩺 Schedule a check-up with your doctor within the next month",
+                "🏃‍♂️ Start moving — even 15-20 minutes of daily walking helps",
+                "🍎 Cut back on salt, fried foods, and sugary drinks",
+                "😴 Prioritize 7-8 hours of sleep each night",
+                "📊 Monitor your blood pressure regularly if possible",
             ]
         else:
             risk = "High Risk"
             tips = [
-                "Consult a cardiologist for a formal ECG evaluation promptly.",
-                "Do not delay — high-risk indicators require clinical assessment.",
-                "Avoid strenuous exercise until cleared by a physician.",
-                "Strictly reduce sodium, alcohol, and tobacco if applicable.",
+                "🚨 **Please see a doctor within the next 1-2 weeks**",
+                "❤️ Don't ignore symptoms like chest pain or shortness of breath",
+                "🏃‍♂️ Start with light activity like walking — consult your doctor first",
+                "🥗 Immediately reduce salt, saturated fats, and processed foods",
+                "😴 Get 7-8 hours of sleep and manage stress levels",
             ]
 
         risk_card(risk, confidence, tips)
 
+        # Simple radar chart
         try:
             import plotly.graph_objects as go
-            age_order_list = ["18-24","25-29","30-34","35-39","40-44","45-49",
-                              "50-54","55-59","60-64","65-69","70-74","75-79","80 or older"]
-            labels = ["BMI", "Phys Health", "Mental Health", "Sleep", "Age", "Activity"]
+            labels = ["BMI", "Smoking", "BP", "Diabetes", "Exercise", "Sleep"]
             vals = [
                 min((bmi - 10) / 50 * 100, 100),
-                physical_health / 30 * 100,
-                mental_health / 30 * 100,
-                max(0, (8 - sleep_time) / 8 * 100),
-                age_order_list.index(age_cat) / 12 * 100,
-                0 if physical_activity == "Yes" else 60,
+                100 if smoking == "Yes" else 0,
+                100 if high_bp == "Yes" else 0,
+                100 if diabetic == "Yes" else 0,
+                0 if physical_activity == "Rarely or never" else 60 if physical_activity == "1-2 times per week" else 80,
+                min(max((sleep_time_val - 5) / 4 * 100, 0), 100),
             ]
             fig = go.Figure(go.Scatterpolar(
                 r=vals + [vals[0]], theta=labels + [labels[0]],
@@ -207,12 +305,12 @@ def show():
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                 showlegend=False, margin=dict(t=30, b=30, l=40, r=40), height=320,
             )
-            st.markdown("**Risk Factor Profile**")
+            st.markdown("**Your Health Profile**")
             st.plotly_chart(fig, use_container_width=True)
         except Exception:
             pass
 
         save_screening("heart", risk, confidence,
-                       age=age_order.index(age_cat) * 5 + 21,
+                       age=age,
                        sex=sex.lower(), symptom_notes=symptom_notes)
-        st.success("✅ Result saved to history.")
+        st.success("✅ Your results have been saved.")

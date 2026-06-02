@@ -2,13 +2,10 @@
 preprocess.py
 =============
 Data loading, cleaning, and feature engineering for MediScan AI.
+Simplified to use only essential, easy-to-understand medical markers.
 
-Heart dataset  : heart.csv  (CDC BRFSS 2022 — auto-detects column names)
-Diabetes dataset: diabetes.csv (CDC BRFSS 2015 — Diabetes_binary target)
-
-The 2022 BRFSS heart dataset uses completely different column names from the
-2020 version. This module auto-detects which version you have and normalises
-everything to a common internal schema before training.
+Heart dataset  : heart.csv  (CDC BRFSS 2022)
+Diabetes dataset: diabetes.csv (CDC BRFSS 2015)
 """
 
 import pandas as pd
@@ -26,7 +23,7 @@ except ImportError:
 
 
 # ─────────────────────────────────────────────────────────────
-# HEART DISEASE
+# HEART DISEASE - SIMPLIFIED COLUMNS (User-friendly medical markers)
 # ─────────────────────────────────────────────────────────────
 
 # 2022 BRFSS column names → internal name
@@ -51,14 +48,33 @@ HEART_2022_MAP = {
     "HadDiabetes":           "Diabetic",
 }
 
-# 2020 BRFSS column names are already in the internal schema
-HEART_2020_TARGET = "HeartDisease"
-
+# SIMPLIFIED FEATURE COLUMNS - Only essential markers for users
+# These are easy to understand and commonly used in medical screenings
 HEART_FEATURE_COLS = [
-    "BMI", "Smoking", "AlcoholDrinking", "Stroke", "PhysicalHealth",
-    "MentalHealth", "DiffWalking", "Sex", "AgeCategory", "Race",
-    "Diabetic", "PhysicalActivity", "GenHealth", "SleepTime",
-    "Asthma", "KidneyDisease", "SkinCancer"
+    "BMI",                    # Body Mass Index (user enters weight/height)
+    "Smoking",                # Smoking status
+    "PhysicalActivity",       # Exercise frequency
+    "SleepTime",              # Average sleep hours
+    "GenHealth",              # Self-reported general health
+    "Sex",                    # Gender
+    "AgeCategory",            # Age group
+    "Diabetic",               # Diabetes status
+    "Stroke",                 # Stroke history
+    "HighBP"                  # High blood pressure (if available)
+]
+
+# Simplified list that will be presented to users in the UI
+HEART_SIMPLE_FEATURES = [
+    "age",                    # Age in years
+    "sex",                    # Gender
+    "bmi",                    # BMI
+    "smoking",                # Current smoker?
+    "exercise",               # Regular physical activity?
+    "sleep_hours",            # Average sleep per night
+    "general_health",         # Self-reported health status
+    "diabetes",               # Do you have diabetes?
+    "high_blood_pressure",    # Do you have high BP?
+    "chest_pain_symptoms"     # Chest pain/discomfort
 ]
 
 
@@ -78,6 +94,10 @@ def _normalise_heart_2022(df: pd.DataFrame) -> pd.DataFrame:
             lambda x: 0 if str(x).lower() in ("no", "no, pre-diabetes or borderline diabetes") else 1
         )
 
+    # Check if HighBP exists (it might be named differently)
+    if "BloodPressure" in df.columns and "HighBP" not in df.columns:
+        df["HighBP"] = df["BloodPressure"]
+
     return df
 
 
@@ -92,14 +112,12 @@ def load_heart(path: str) -> pd.DataFrame:
         print("  Detected: BRFSS 2022 format — remapping columns")
         df = _normalise_heart_2022(df)
         target_col = "HeartDisease"
-        # Target in 2022 is Yes/No
         df[target_col] = df[target_col].map({"Yes": 1, "No": 0}).fillna(0).astype(int)
     elif "HeartDisease" in df.columns:
         print("  Detected: BRFSS 2020 format")
         target_col = "HeartDisease"
         df[target_col] = df[target_col].map({"Yes": 1, "No": 0}).fillna(0).astype(int)
     else:
-        # Last resort: use first binary-looking column or raise clear error
         candidates = [c for c in df.columns if "heart" in c.lower() or "attack" in c.lower()]
         if candidates:
             target_col = candidates[0]
@@ -116,20 +134,20 @@ def load_heart(path: str) -> pd.DataFrame:
 
     df = df.dropna(subset=[target_col])
 
-    # Fill NaNs
+    # Fill NaNs with appropriate values
     for col in df.select_dtypes(include=[np.number]).columns:
         df[col] = df[col].fillna(df[col].median())
     for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].fillna(df[col].mode()[0])
+        df[col] = df[col].fillna(df[col].mode()[0] if len(df[col].mode()) > 0 else "Unknown")
 
-    # Encode remaining Yes/No object columns
+    # Encode Yes/No object columns
     for col in df.columns:
         if df[col].dtype == object:
-            unique_vals = set(df[col].dropna().str.lower().unique())
+            unique_vals = set(df[col].dropna().astype(str).str.lower().unique())
             if unique_vals <= {"yes", "no"}:
                 df[col] = df[col].map({"Yes": 1, "No": 0, "yes": 1, "no": 0}).fillna(0).astype(int)
 
-    # Ordinal: AgeCategory
+    # Ordinal: AgeCategory (convert to numeric)
     age_order = ["18-24", "25-29", "30-34", "35-39", "40-44", "45-49",
                  "50-54", "55-59", "60-64", "65-69", "70-74", "75-79", "80 or older"]
     if "AgeCategory" in df.columns and df["AgeCategory"].dtype == object:
@@ -137,7 +155,7 @@ def load_heart(path: str) -> pd.DataFrame:
             df["AgeCategory"], categories=age_order, ordered=True
         ).codes.replace(-1, 6)
 
-    # Ordinal: GenHealth
+    # Ordinal: GenHealth (Poor to Excellent)
     gen_order = ["Poor", "Fair", "Good", "Very good", "Excellent"]
     if "GenHealth" in df.columns and df["GenHealth"].dtype == object:
         df["GenHealth"] = pd.Categorical(
@@ -148,6 +166,10 @@ def load_heart(path: str) -> pd.DataFrame:
     if "Sex" in df.columns and df["Sex"].dtype == object:
         df["Sex"] = df["Sex"].map({"Male": 1, "Female": 0}).fillna(0).astype(int)
 
+    # Create HighBP if not exists (derive from other columns if possible)
+    if "HighBP" not in df.columns:
+        df["HighBP"] = 0  # Default to No
+
     # Label encode any remaining object columns
     le = LabelEncoder()
     for col in df.select_dtypes(include=["object"]).columns:
@@ -157,47 +179,83 @@ def load_heart(path: str) -> pd.DataFrame:
 
 
 def prepare_heart(path: str, models_dir: str = "models"):
+    """Prepare heart dataset with simplified features"""
     df = load_heart(path)
 
+    # Use only the essential features that users can understand
     available = [c for c in HEART_FEATURE_COLS if c in df.columns]
+    
+    # If we're missing critical features, log them
+    missing = [c for c in HEART_FEATURE_COLS if c not in df.columns]
+    if missing:
+        print(f"  ⚠️ Missing features: {missing}")
+    
     if not available:
         raise ValueError(f"No expected feature columns found. Got: {list(df.columns)}")
 
     X = df[available].values.astype(float)
     y = df["HeartDisease"].values.astype(int)
 
+    # Check if we have both classes
+    if len(np.unique(y)) < 2:
+        print(f"  ⚠️ WARNING: Heart dataset has only one class! ({np.unique(y)[0]})")
+        print(f"  Model will not be meaningful. Please use a dataset with both healthy and heart disease cases.")
+
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X, y, test_size=0.2, random_state=42, stratify=y if len(np.unique(y)) >= 2 else None
     )
 
-    if HAS_SMOTE:
+    # Apply SMOTE only if we have both classes
+    if HAS_SMOTE and len(np.unique(y_train)) >= 2:
         try:
             sm = SMOTE(random_state=42)
             X_train, y_train = sm.fit_resample(X_train, y_train)
-        except Exception:
-            pass
+            print(f"  SMOTE applied: {len(X_train)} training samples")
+        except Exception as e:
+            print(f"  SMOTE skipped: {e}")
+    else:
+        print(f"  SMOTE skipped (only one class or imbalanced-learn not installed)")
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
-    X_test  = scaler.transform(X_test)
+    X_test = scaler.transform(X_test)
 
     os.makedirs(models_dir, exist_ok=True)
-    joblib.dump(scaler,    os.path.join(models_dir, "heart_scaler.pkl"))
+    joblib.dump(scaler, os.path.join(models_dir, "heart_scaler.pkl"))
     joblib.dump(available, os.path.join(models_dir, "heart_feature_cols.pkl"))
 
     return X_train, X_test, y_train, y_test, scaler, available
 
 
 # ─────────────────────────────────────────────────────────────
-# DIABETES
+# DIABETES - SIMPLIFIED COLUMNS (User-friendly medical markers)
 # ─────────────────────────────────────────────────────────────
 
+# SIMPLIFIED FEATURE COLUMNS for Diabetes - Essential markers only
 DIABETES_FEATURE_COLS = [
-    "HighBP", "HighChol", "CholCheck", "BMI", "Smoker",
-    "Stroke", "HeartDiseaseorAttack", "PhysActivity", "Fruits",
-    "Veggies", "HvyAlcoholConsump", "AnyHealthcare", "NoDocbcCost",
-    "GenHlth", "MentHlth", "PhysHlth", "DiffWalk",
-    "Sex", "Age", "Education", "Income"
+    "HighBP",           # High blood pressure
+    "HighChol",         # High cholesterol
+    "BMI",              # Body Mass Index
+    "Smoker",           # Smoking status
+    "PhysActivity",     # Physical activity
+    "Fruits",           # Fruit consumption
+    "Veggies",          # Vegetable consumption
+    "GenHlth",          # General health
+    "Age",              # Age group
+    "Sex"               # Gender
+]
+
+# Simplified list that will be presented to users in the UI
+DIABETES_SIMPLE_FEATURES = [
+    "age",              # Age in years
+    "sex",              # Gender
+    "bmi",              # BMI
+    "high_blood_pressure",  # Do you have high BP?
+    "high_cholesterol",     # Do you have high cholesterol?
+    "smoking",          # Current smoker?
+    "exercise",         # Regular physical activity?
+    "diet",             # Diet quality (fruits/veggies)
+    "general_health"    # Self-reported health status
 ]
 
 
@@ -228,41 +286,80 @@ def load_diabetes(path: str) -> pd.DataFrame:
 
     df = df.dropna(subset=[target_col])
 
+    # Fill missing values with median (KNN can be added later if needed)
     for col in DIABETES_FEATURE_COLS:
         if col in df.columns:
             df[col] = df[col].fillna(df[col].median())
+
+    # Convert Yes/No columns to binary
+    yes_no_cols = ["HighBP", "HighChol", "Smoker", "PhysActivity", "Fruits", "Veggies", "HvyAlcoholConsump", 
+                   "AnyHealthcare", "NoDocbcCost", "DiffWalk"]
+    for col in yes_no_cols:
+        if col in df.columns and df[col].dtype == object:
+            df[col] = df[col].map({"Yes": 1, "No": 0, "yes": 1, "no": 0}).fillna(0).astype(int)
+
+    # Ordinal: GenHlth
+    gen_order = ["Poor", "Fair", "Good", "Very good", "Excellent"]
+    if "GenHlth" in df.columns and df["GenHlth"].dtype == object:
+        df["GenHlth"] = pd.Categorical(
+            df["GenHlth"], categories=gen_order, ordered=True
+        ).codes.replace(-1, 2)
+
+    # Binary: Sex
+    if "Sex" in df.columns and df["Sex"].dtype == object:
+        df["Sex"] = df["Sex"].map({"Male": 1, "Female": 0}).fillna(0).astype(int)
+
+    # Age is already numeric in BRFSS dataset (1-13 scale)
+    if "Age" in df.columns and df["Age"].dtype == object:
+        df["Age"] = pd.to_numeric(df["Age"], errors='coerce').fillna(7)
 
     df[target_col] = df[target_col].astype(int)
     return df
 
 
 def prepare_diabetes(path: str, models_dir: str = "models"):
+    """Prepare diabetes dataset with simplified features"""
     df = load_diabetes(path)
 
+    # Use only the essential features that users can understand
     available = [c for c in DIABETES_FEATURE_COLS if c in df.columns]
+    
+    # If we're missing critical features, log them
+    missing = [c for c in DIABETES_FEATURE_COLS if c not in df.columns]
+    if missing:
+        print(f"  ⚠️ Missing features: {missing}")
+    
     if not available:
         raise ValueError(f"No expected feature columns found. Got: {list(df.columns)}")
 
     X = df[available].values.astype(float)
     y = df["Diabetes_binary"].values.astype(int)
 
+    # Check if we have both classes
+    if len(np.unique(y)) < 2:
+        print(f"  ⚠️ WARNING: Diabetes dataset has only one class! ({np.unique(y)[0]})")
+
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X, y, test_size=0.2, random_state=42, stratify=y if len(np.unique(y)) >= 2 else None
     )
 
-    if HAS_SMOTE:
+    # Apply SMOTE only if we have both classes
+    if HAS_SMOTE and len(np.unique(y_train)) >= 2:
         try:
             sm = SMOTE(random_state=42)
             X_train, y_train = sm.fit_resample(X_train, y_train)
-        except Exception:
-            pass
+            print(f"  SMOTE applied: {len(X_train)} training samples")
+        except Exception as e:
+            print(f"  SMOTE skipped: {e}")
+    else:
+        print(f"  SMOTE skipped (only one class or imbalanced-learn not installed)")
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
-    X_test  = scaler.transform(X_test)
+    X_test = scaler.transform(X_test)
 
     os.makedirs(models_dir, exist_ok=True)
-    joblib.dump(scaler,    os.path.join(models_dir, "diabetes_scaler.pkl"))
+    joblib.dump(scaler, os.path.join(models_dir, "diabetes_scaler.pkl"))
     joblib.dump(available, os.path.join(models_dir, "diabetes_feature_cols.pkl"))
 
     return X_train, X_test, y_train, y_test, scaler, available
