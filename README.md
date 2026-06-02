@@ -1,7 +1,7 @@
  HEAD
-# 🩺 MediScan AI
+# MediScan AI
 
-**ML-powered disease risk prediction — CSC-233 AI Lab Project, BNU Spring 2026**
+**ML-powered disease risk prediction**
 
 > Early Detection, Better Outcomes.
 
