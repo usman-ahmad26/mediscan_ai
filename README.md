@@ -22,18 +22,6 @@ MediScan AI is a Streamlit web application that predicts the risk of **Heart Dis
 
 ---
 
-## 👥 Team
-
-| # | Name | Roll | Contribution |
-|---|---|---|---|
-| 1 | Usman Ahmad | F2025-0893 | NLP Symptom Chat (Gemini API) |
-| 2 | Muhammad Arsal | F2024-0708 | SVM Classifier |
-| 3 | Mustafa Ali | F2024-0706 | Random Forest Classifier |
-| 4 | Ahmed Hunbal | F2024-0134 | Decision Tree Classifier |
-| 5 | Daniyal Khan | F2024-0792 | Naive Bayes Classifier |
-
----
-
 ## 🗂️ Project Structure
 
 ```text
